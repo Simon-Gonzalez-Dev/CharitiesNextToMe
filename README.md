@@ -1,6 +1,6 @@
 CharitiesNextToMe A social media-style platform for discovering local Canadian charities through feed and map interfaces.
 
-Features User Authentication: Secure sign-in with Supabase Auth Social Feed: Instagram-style feed showing charity posts with like and follow functionality Interactive Map: Google Maps-style interface showing charity locations with hover information Search & Filter: Search charities by Canadian cities with autocomplete and filter by category Responsive Design: Mobile-friendly interface with modern UI components Tech Stack Frontend: React, Vite, TypeScript, Tailwind CSS: Express.js, Node.js Database: Postgres Build Tool: Vite Color Scheme Primary Red: 
+Features User Authentication: Secure sign-in with Supabase Auth Social Feed: Instagram-style feed showing charity posts with like and follow functionality Interactive Map: Google Maps-style interface showing charity locations with hover information Search & Filter: Search charities by Canadian cities with autocomplete and filter by category Responsive Design: Mobile-friendly interface with modern UI components Tech Stack Frontend: Next.js, Vite, TypeScript, Tailwind CSS: Express.js, Node.js Database: Postgres Build Tool: Vite Color Scheme Primary Red: 
 #E53935 (charity red) Map Blue: 
 #2196F3 (map interface) Action Green: 
 #4CAF50 (donate buttons) Background: 

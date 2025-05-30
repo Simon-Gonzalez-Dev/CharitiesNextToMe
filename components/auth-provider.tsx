@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useRef } from "react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -20,74 +20,101 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const mounted = useRef(true)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    // Get initial session
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  useEffect(() => {
     const getInitialSession = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession()
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
 
-      if (error) {
-        console.error("Error getting session:", error)
-      }
+        if (error) throw error
 
-      setUser(session?.user ?? null)
-      setLoading(false)
+        if (mounted.current) {
+          setUser(session?.user ?? null)
+          setLoading(false)
 
-      // Create user profile if it doesn't exist
-      if (session?.user && !error) {
-        await createUserProfile(session.user)
+          if (session?.user) {
+            await createUserProfile(session.user)
+          }
+        }
+      } catch (error: any) {
+        if (mounted.current) {
+          setError(error.message)
+          setLoading(false)
+        }
       }
     }
 
     getInitialSession()
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email)
+      if (mounted.current) {
+        setUser(session?.user ?? null)
+        setLoading(false)
 
-      setUser(session?.user ?? null)
-      setLoading(false)
+        if (event === "SIGNED_IN" && session?.user) {
+          await createUserProfile(session.user)
+          router.refresh()
+        }
 
-      if (event === "SIGNED_IN" && session?.user) {
-        await createUserProfile(session.user)
-        router.refresh()
-      }
-
-      if (event === "SIGNED_OUT") {
-        router.push("/")
-        router.refresh()
+        if (event === "SIGNED_OUT") {
+          router.push("/")
+          router.refresh()
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted.current = false
+      subscription.unsubscribe()
+    }
   }, [supabase.auth, router])
 
   const createUserProfile = async (user: User) => {
+    if (!mounted.current) return
+
     try {
-      const { data: existingUser } = await supabase.from("users").select("id").eq("id", user.id).single()
+      const { data: existingUser, error: selectError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", user.id)
+        .single()
+        .throwOnError()
 
       if (!existingUser) {
-        const { error } = await supabase.from("users").insert({
-          id: user.id,
-          email: user.email!,
-          full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Anonymous",
-          avatar_url: user.user_metadata?.avatar_url || null,
-        })
+        const { error: insertError } = await supabase
+          .from("users")
+          .insert({
+            id: user.id,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Anonymous",
+            avatar_url: user.user_metadata?.avatar_url || null,
+          })
+          .throwOnError()
 
-        if (error && error.code !== "23505") {
-          // Ignore duplicate key errors
-          console.error("Error creating user profile:", error)
+        if (insertError && (insertError as any).code !== "23505") {
+          throw insertError
         }
       }
-    } catch (error) {
-      console.error("Error in createUserProfile:", error)
+    } catch (error: any) {
+      if (mounted.current) {
+        setError(error.message)
+      }
     }
   }
 

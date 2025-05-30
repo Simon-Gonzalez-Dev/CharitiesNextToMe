@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { RouteGuard } from "@/components/route-guard"
 import { Navigation } from "@/components/navigation"
@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseHelpers } from "@/lib/supabase/client"
 import { User, Mail, MapPin, Calendar, CheckCircle, Heart, Edit3 } from "lucide-react"
-import { UserPosts } from "@/components/user-posts"
 import { CreatePost } from "@/components/create-post"
 import { PostCard } from "@/components/post-card"
+import { useRouter } from "next/navigation"
 
 interface UserProfile {
   id: string
@@ -31,7 +31,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -39,6 +39,9 @@ export default function ProfilePage() {
   const [message, setMessage] = useState("")
   const [posts, setPosts] = useState<any[]>([])
   const [loadingPosts, setLoadingPosts] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const mounted = useRef(true)
+  const router = useRouter()
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -46,82 +49,79 @@ export default function ProfilePage() {
     location: "",
   })
 
-  const supabase = createClient()
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
   useEffect(() => {
-    if (user) {
-      fetchProfile()
-      fetchPosts()
+    if (user && !authLoading) {
+      loadUserData()
+    } else if (!user && !authLoading) {
+      router.push("/auth")
     }
-  }, [user])
+  }, [user, authLoading])
 
-  const fetchProfile = async () => {
+  const loadUserData = async () => {
+    if (!user?.id || !mounted.current) return
+
     try {
-      const { data, error } = await supabase.from("users").select("*").eq("id", user?.id).single()
+      setError(null)
+      const [userProfile, userPosts] = await Promise.all([
+        supabaseHelpers.getUserProfile(user.id),
+        supabaseHelpers.getUserPosts(user.id)
+      ])
 
-      if (error) throw error
-
-      setProfile(data)
-      setFormData({
-        full_name: data.full_name || "",
-        bio: data.bio || "",
-        location: data.location || "",
-      })
-    } catch (error) {
-      console.error("Error fetching profile:", error)
+      if (mounted.current) {
+        setProfile(userProfile)
+        setPosts(userPosts)
+        setFormData({
+          full_name: userProfile.full_name || "",
+          bio: userProfile.bio || "",
+          location: userProfile.location || "",
+        })
+      }
+    } catch (error: any) {
+      console.error("Error loading user data:", error)
+      if (mounted.current) {
+        setError(error.message)
+      }
     } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchPosts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select(`
-          *,
-          user:users (
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-      setPosts(data || [])
-    } catch (error) {
-      console.error("Error fetching posts:", error)
-    } finally {
-      setLoadingPosts(false)
+      if (mounted.current) {
+        setLoading(false)
+        setLoadingPosts(false)
+      }
     }
   }
 
   const handleSave = async () => {
+    if (!user?.id || !mounted.current) return
+
     setSaving(true)
     setMessage("")
 
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
-          full_name: formData.full_name,
-          bio: formData.bio,
-          location: formData.location,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user?.id)
+      await supabaseHelpers.updateUserProfile(user.id, {
+        full_name: formData.full_name,
+        bio: formData.bio,
+        location: formData.location,
+      })
 
-      if (error) throw error
-
-      setMessage("Profile updated successfully!")
-      setEditing(false)
-      fetchProfile()
+      if (mounted.current) {
+        setMessage("Profile updated successfully!")
+        setEditing(false)
+        loadUserData()
+      }
     } catch (error: any) {
-      setMessage(`Error updating profile: ${error.message}`)
+      if (mounted.current) {
+        setMessage(`Error updating profile: ${error.message}`)
+      }
     } finally {
-      setSaving(false)
+      if (mounted.current) {
+        setSaving(false)
+      }
     }
   }
 
@@ -142,31 +142,26 @@ export default function ProfilePage() {
   }
 
   const handleLike = async (postId: string) => {
+    if (!user?.id || !mounted.current) return
+
     try {
-      const { error } = await supabase
-        .from("post_likes")
-        .insert({
-          post_id: postId,
-          user_id: user?.id,
-          created_at: new Date().toISOString(),
-        })
-
-      if (error) throw error
-
-      // Update the post's like count in the UI
-      setPosts((currentPosts) =>
-        currentPosts.map((post) =>
-          post.id === postId
-            ? { ...post, like_count: post.like_count + 1 }
-            : post
+      await supabaseHelpers.likePost(postId, user.id)
+      
+      if (mounted.current) {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId
+              ? { ...post, like_count: post.like_count + 1 }
+              : post
+          )
         )
-      )
+      }
     } catch (error) {
       console.error("Error liking post:", error)
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <RouteGuard requireAuth={true}>
         <div className="min-h-screen bg-gray-50">
@@ -179,6 +174,30 @@ export default function ProfilePage() {
                 <div className="lg:col-span-2 h-96 bg-gray-200 rounded-lg"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </RouteGuard>
+    )
+  }
+
+  if (error) {
+    return (
+      <RouteGuard requireAuth={true}>
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Alert variant="destructive">
+              <AlertDescription>
+                {error}
+                <Button 
+                  variant="outline" 
+                  className="ml-4"
+                  onClick={loadUserData}
+                >
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
       </RouteGuard>
