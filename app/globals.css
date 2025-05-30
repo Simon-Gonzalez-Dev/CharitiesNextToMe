@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --charity-red: #e53935;
+  --map-blue: #2196f3;
+  --action-green: #4caf50;
+  --text-dark: #212121;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .font-poppins {
+    font-family: var(--font-poppins);
+  }
+
+  .font-inter {
+    font-family: var(--font-inter);
+  }
+
+  .text-charity-red {
+    color: var(--charity-red);
+  }
+
+  .bg-charity-red {
+    background-color: var(--charity-red);
+  }
+
+  .text-map-blue {
+    color: var(--map-blue);
+  }
+
+  .bg-map-blue {
+    background-color: var(--map-blue);
+  }
+
+  .text-action-green {
+    color: var(--action-green);
+  }
+
+  .bg-action-green {
+    background-color: var(--action-green);
+  }
+}
