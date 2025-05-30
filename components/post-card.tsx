@@ -1,96 +1,84 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, MessageCircle, Share, CheckCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Heart, MessageCircle, Share2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 interface Post {
   id: string
-  title: string
   content: string
   image_url: string | null
-  like_count: number
   created_at: string
-  charity: {
+  user: {
     id: string
-    name: string
-    logo_url: string | null
-    verified: boolean
+    full_name: string | null
+    avatar_url: string | null
   }
-  user_liked: boolean
+  like_count: number
 }
 
 interface PostCardProps {
   post: Post
-  onLike: (postId: string, currentlyLiked: boolean) => void
+  onLike?: (postId: string) => void
 }
 
 export function PostCard({ post, onLike }: PostCardProps) {
-  const [imageLoading, setImageLoading] = useState(true)
+  const [isLiked, setIsLiked] = useState(false)
+
+  const handleLike = () => {
+    if (onLike) {
+      onLike(post.id)
+      setIsLiked(!isLiked)
+    }
+  }
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={post.charity.logo_url || undefined} />
-            <AvatarFallback>{post.charity.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <div className="flex items-center space-x-2">
-              <h3 className="font-semibold text-gray-900">{post.charity.name}</h3>
-              {post.charity.verified && <CheckCircle className="h-4 w-4 text-blue-500" />}
-            </div>
-            <p className="text-sm text-gray-500">
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-            </p>
-          </div>
+    <Card className="mb-4">
+      <CardHeader className="flex flex-row items-center space-x-4 p-4">
+        <Avatar>
+          <AvatarImage src={post.user.avatar_url || undefined} />
+          <AvatarFallback>{post.user.full_name?.[0] || "U"}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <p className="font-medium">{post.user.full_name || "Anonymous User"}</p>
+          <p className="text-sm text-gray-500">
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+          </p>
         </div>
       </CardHeader>
-
-      <CardContent className="pt-0">
-        {post.title && <h4 className="font-semibold text-lg text-gray-900 mb-2">{post.title}</h4>}
-
-        <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
-
+      <CardContent className="p-4 pt-0">
+        <p className="text-gray-800 whitespace-pre-wrap mb-4">{post.content}</p>
+        
         {post.image_url && (
-          <div className="relative mb-4 rounded-lg overflow-hidden">
-            {imageLoading && <div className="absolute inset-0 bg-gray-200 animate-pulse" />}
-            <Image
-              src={post.image_url || "/placeholder.svg"}
-              alt={post.title || "Post image"}
-              width={600}
-              height={400}
-              className="w-full h-auto object-cover"
-              onLoad={() => setImageLoading(false)}
+          <div className="mb-4 rounded-lg overflow-hidden">
+            <img
+              src={post.image_url}
+              alt="Post attachment"
+              className="w-full h-auto max-h-[400px] object-cover"
             />
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onLike(post.id, post.user_liked)}
-              className={`flex items-center space-x-2 ${post.user_liked ? "text-charity-red" : "text-gray-600"}`}
-            >
-              <Heart className={`h-5 w-5 ${post.user_liked ? "fill-current" : ""}`} />
-              <span>{post.like_count}</span>
-            </Button>
-
-            <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-600">
-              <MessageCircle className="h-5 w-5" />
-              <span>Comment</span>
-            </Button>
-          </div>
-
-          <Button variant="ghost" size="sm" className="text-gray-600">
-            <Share className="h-5 w-5" />
+        <div className="flex items-center space-x-4 pt-4 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex items-center space-x-2 ${isLiked ? "text-charity-red" : ""}`}
+            onClick={handleLike}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+            <span>{post.like_count + (isLiked ? 1 : 0)}</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+            <MessageCircle className="h-4 w-4" />
+            <span>Comment</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+            <Share2 className="h-4 w-4" />
+            <span>Share</span>
           </Button>
         </div>
       </CardContent>

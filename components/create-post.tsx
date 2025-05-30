@@ -11,7 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/auth-provider"
-import { PlusCircle, ImageIcon, Send, X, CheckCircle } from "lucide-react"
+import { PlusCircle, ImageIcon, Send, X, CheckCircle, Image } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface CreatePostProps {
   onPostCreated?: () => void
@@ -26,6 +27,7 @@ export function CreatePost({ onPostCreated, trigger }: CreatePostProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { user } = useAuth()
   const supabase = createClient()
@@ -51,6 +53,7 @@ export function CreatePost({ onPostCreated, trigger }: CreatePostProps) {
         image_url: imageUrl.trim() || null,
         post_type: "user",
         like_count: 0,
+        created_at: new Date().toISOString(),
       })
 
       if (error) throw error
@@ -110,97 +113,109 @@ export function CreatePost({ onPostCreated, trigger }: CreatePostProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <X className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">{success}</AlertDescription>
-            </Alert>
-          )}
-
-          <div>
-            <Label htmlFor="title">Title (Optional)</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Give your post a title..."
-              className="mt-1"
-              maxLength={255}
-            />
-            <p className="text-xs text-gray-500 mt-1">{title.length}/255 characters</p>
-          </div>
-
-          <div>
-            <Label htmlFor="content">Content *</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your thoughts about supporting charities, volunteer experiences, or community initiatives..."
-              className="mt-1 min-h-[120px]"
-              required
-              maxLength={2000}
-            />
-            <p className="text-xs text-gray-500 mt-1">{content.length}/2000 characters</p>
-          </div>
-
-          <div>
-            <Label htmlFor="imageUrl" className="flex items-center space-x-2">
-              <ImageIcon className="h-4 w-4" />
-              <span>Image URL (Optional)</span>
-            </Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              className="mt-1"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Supported formats: JPG, JPEG, PNG, GIF, WebP. Must be a direct link to the image.
-            </p>
-          </div>
-
-          {/* Image Preview */}
-          {imageUrl && isValidImageUrl(imageUrl) && (
-            <div>
-              <Label>Image Preview</Label>
-              <div className="mt-1 border rounded-lg overflow-hidden">
-                <img
-                  src={imageUrl || "/placeholder.svg"}
-                  alt="Preview"
-                  className="w-full h-48 object-cover"
-                  onError={() => setError("Failed to load image. Please check the URL.")}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={handleCancel} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || !content.trim()} className="bg-charity-red hover:bg-red-600">
-              {loading ? (
-                "Publishing..."
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Publish Post
-                </>
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Post</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <X className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-            </Button>
-          </div>
-        </form>
+
+              {success && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">{success}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Title (Optional)</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Give your post a title..."
+                  className="mt-1"
+                  maxLength={255}
+                />
+                <p className="text-xs text-gray-500 mt-1">{title.length}/255 characters</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="content">Content *</Label>
+                <Textarea
+                  id="content"
+                  placeholder="Share your thoughts about supporting charities, volunteer experiences, or community initiatives..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="min-h-[100px]"
+                  required
+                  maxLength={2000}
+                />
+                <p className="text-xs text-gray-500 mt-1">{content.length}/2000 characters</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl">Image URL (optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="imageUrl"
+                    placeholder="https://example.com/image.jpg"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    type="url"
+                  />
+                  {imageUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setImageUrl("")}
+                    >
+                      <Image className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Image Preview */}
+              {imageUrl && isValidImageUrl(imageUrl) && (
+                <div>
+                  <Label>Image Preview</Label>
+                  <div className="mt-1 border rounded-lg overflow-hidden">
+                    <img
+                      src={imageUrl || "/placeholder.svg"}
+                      alt="Preview"
+                      className="w-full h-48 object-cover"
+                      onError={() => setError("Failed to load image. Please check the URL.")}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleCancel} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading || !content.trim()} className="bg-charity-red hover:bg-red-600">
+                  {loading ? (
+                    "Publishing..."
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Publish Post
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </DialogContent>
     </Dialog>
   )

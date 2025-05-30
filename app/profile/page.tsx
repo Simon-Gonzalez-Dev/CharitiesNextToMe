@@ -15,6 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { createClient } from "@/lib/supabase/client"
 import { User, Mail, MapPin, Calendar, CheckCircle, Heart, Edit3 } from "lucide-react"
 import { UserPosts } from "@/components/user-posts"
+import { CreatePost } from "@/components/create-post"
+import { PostCard } from "@/components/post-card"
 
 interface UserProfile {
   id: string
@@ -35,6 +37,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+  const [posts, setPosts] = useState<any[]>([])
+  const [loadingPosts, setLoadingPosts] = useState(true)
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -47,6 +51,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       fetchProfile()
+      fetchPosts()
     }
   }, [user])
 
@@ -66,6 +71,30 @@ export default function ProfilePage() {
       console.error("Error fetching profile:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          user:users (
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      setPosts(data || [])
+    } catch (error) {
+      console.error("Error fetching posts:", error)
+    } finally {
+      setLoadingPosts(false)
     }
   }
 
@@ -109,6 +138,31 @@ export default function ProfilePage() {
   const handleAvatarUpload = (newAvatarUrl: string) => {
     if (profile) {
       setProfile({ ...profile, avatar_url: newAvatarUrl })
+    }
+  }
+
+  const handleLike = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from("post_likes")
+        .insert({
+          post_id: postId,
+          user_id: user?.id,
+          created_at: new Date().toISOString(),
+        })
+
+      if (error) throw error
+
+      // Update the post's like count in the UI
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId
+            ? { ...post, like_count: post.like_count + 1 }
+            : post
+        )
+      )
+    } catch (error) {
+      console.error("Error liking post:", error)
     }
   }
 
@@ -224,7 +278,7 @@ export default function ProfilePage() {
               <UserDiscovery />
             </div>
 
-            {/* Profile Details */}
+            {/* Profile Details and Posts */}
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
@@ -355,8 +409,34 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
+              {/* Create Post */}
+              <CreatePost />
+
               {/* User Posts */}
-              <UserPosts userId={user?.id || ""} isOwnProfile={true} />
+              <div>
+                <h2 className="text-2xl font-poppins font-bold text-gray-900 mb-6">Your Posts</h2>
+                {loadingPosts ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-48 bg-gray-200 rounded-lg"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : posts.length > 0 ? (
+                  <div className="space-y-4">
+                    {posts.map((post) => (
+                      <PostCard key={post.id} post={post} onLike={handleLike} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <p className="text-gray-600">You haven't created any posts yet.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           </div>
         </div>

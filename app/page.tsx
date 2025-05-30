@@ -1,11 +1,76 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Heart, Map, Search, Users, MapPin, TrendingUp } from "lucide-react"
 import { Navigation } from "@/components/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PostCard } from "@/components/post-card"
+import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/auth-provider"
 
 export default function HomePage() {
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+  const supabase = createClient()
+
+  useEffect(() => {
+    fetchPosts()
+  }, [])
+
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          user:users (
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      setPosts(data || [])
+    } catch (error) {
+      console.error("Error fetching posts:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLike = async (postId: string) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from("post_likes")
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        })
+
+      if (error) throw error
+
+      // Update the post's like count in the UI
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId
+            ? { ...post, like_count: post.like_count + 1 }
+            : post
+        )
+      )
+    } catch (error) {
+      console.error("Error liking post:", error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -34,8 +99,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Recent Posts Section */}
       <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-gray-900 mb-4">Recent Community Posts</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              See what our community is sharing about their charitable experiences and local initiatives.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-48 bg-gray-200 rounded-lg"></div>
+                </div>
+              ))}
+            </div>
+          ) : posts.length > 0 ? (
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} onLike={handleLike} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-gray-600">No posts yet. Be the first to share your story!</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-poppins font-bold text-gray-900 mb-4">
@@ -82,7 +181,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
@@ -100,81 +199,6 @@ export default function HomePage() {
               <div className="text-3xl font-poppins font-bold text-gray-900 mb-2">$5M+</div>
               <div className="text-gray-600">Donations Facilitated</div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Recent Posts Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-gray-900 mb-4">Recent Community Posts</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              See what our community is sharing about their charitable experiences and local initiatives.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Sample post previews - in a real app, you'd fetch recent posts */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-charity-red text-white">S</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">Sarah Johnson</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-sm">
-                  Just finished volunteering at the local food bank. Amazing to see how much impact we can make
-                  together! #CommunitySupport #Volunteering
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-charity-red text-white">M</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">Michael Chen</p>
-                    <p className="text-xs text-gray-500">5 hours ago</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-sm">
-                  Participated in the charity run this weekend. Raised $500 for children's healthcare! Every step
-                  counts. 🏃‍♂️❤️
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-charity-red text-white">E</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">Emma Dubois</p>
-                    <p className="text-xs text-gray-500">1 day ago</p>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-sm">
-                  Teaching kids about environmental conservation through our school program. The future is in good
-                  hands! 🌱
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center mt-12">
-            <Button asChild className="bg-charity-red hover:bg-red-600">
-              <Link href="/feed">View All Posts</Link>
-            </Button>
           </div>
         </div>
       </section>
