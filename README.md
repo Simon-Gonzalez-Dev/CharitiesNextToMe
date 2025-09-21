@@ -2,25 +2,25 @@
 
 A modern, full-stack web application that connects Canadians with local charitable organizations through an interactive social platform. Built with Next.js 14, Supabase, and TypeScript, featuring real-time authentication, interactive maps, and social engagement features.
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
-- 🔐 **Secure Authentication** - Email/password and OAuth integration with Supabase Auth
-- 🗺️ **Interactive Map View** - Geolocation-based charity discovery
-- 🔍 **Advanced Search & Filtering** - Find charities by location, category, and keywords
-- 👥 **Social Features** - Follow, like, and engage with charitable organizations
-- 📱 **Responsive Design** - Optimized for desktop, tablet, and mobile devices
-- 🌙 **Dark Mode Support** - User preference-based theme switching
+- **Secure Authentication** - Email/password and OAuth integration with Supabase Auth
+- **Interactive Map View** - Geolocation-based charity discovery
+- **Advanced Search & Filtering** - Find charities by location, category, and keywords
+- **Social Features** - Follow, like, and engage with charitable organizations
+- **Responsive Design** - Optimized for desktop, tablet, and mobile devices
+- **Dark Mode Support** - User preference-based theme switching
 
 ### Technical Features
-- ⚡ **Server-Side Rendering** - Next.js 14 with App Router
-- 🔄 **Real-time Updates** - Supabase real-time subscriptions
-- 🛡️ **Row Level Security** - Database-level security policies
-- 📊 **Data Visualization** - Interactive charts and analytics
-- 🎨 **Modern UI Components** - shadcn/ui component library
-- 🔧 **Type Safety** - Full TypeScript implementation
+- **Server-Side Rendering** - Next.js 14 with App Router
+- **Real-time Updates** - Supabase real-time subscriptions
+- **Row Level Security** - Database-level security policies
+- **Data Visualization** - Interactive charts and analytics
+- **Modern UI Components** - shadcn/ui component library
+- **Type Safety** - Full TypeScript implementation
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework**: Next.js 14 (App Router)
@@ -47,7 +47,7 @@ A modern, full-stack web application that connects Canadians with local charitab
 - **CSS Processing**: PostCSS with Autoprefixer
 - **Build Tool**: Next.js built-in bundler
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before running this project, ensure you have:
 
@@ -56,7 +56,7 @@ Before running this project, ensure you have:
 - **Git** for version control
 - **Supabase Account** - [Create one here](https://supabase.com)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 
@@ -108,7 +108,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ### Directory Structure
 
@@ -222,7 +222,7 @@ supabase gen types   # Generate TypeScript types
 - Use Tailwind CSS for styling
 - Leverage shadcn/ui components when possible
 
-## 🚀 Deployment
+## Deployment
 
 ### Vercel (Recommended)
 
@@ -245,7 +245,7 @@ NEXT_PUBLIC_SUPABASE_URL=your_production_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_production_anon_key
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Running Tests
 
@@ -266,7 +266,7 @@ npm run type-check
 - Integration tests for authentication flows
 - E2E tests for critical user journeys
 
-## 📚 API Documentation
+## API Documentation
 
 ### Authentication Endpoints
 
@@ -288,7 +288,7 @@ const { data, error } = await supabase
   .single()
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please follow these steps:
 
@@ -309,7 +309,7 @@ We welcome contributions! Please follow these steps:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Next.js](https://nextjs.org/) - React framework
 - [Supabase](https://supabase.io/) - Backend-as-a-Service
@@ -318,10 +318,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Radix UI](https://www.radix-ui.com/) - Headless UI components
 - [Lucide](https://lucide.dev/) - Icon library
 
-## 📞 Support
+## Support
 
 For support, email support@charitiesnexttome.com or join our Discord community.
 
 ---
 
-**Built with ❤️ for the Canadian charitable community** 
+**Built for the Canadian charitable community** 
